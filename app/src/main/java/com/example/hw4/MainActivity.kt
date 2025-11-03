@@ -1,5 +1,6 @@
 package com.example.hw4
 
+import MyWorker
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -31,9 +32,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.hw4.ui.theme.Hw4Theme
 import kotlin.Int
 import kotlin.collections.listOf
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -64,40 +71,52 @@ class MainActivity : ComponentActivity() {
                         )
                         ReminderText()
 
+                    }
                 }
             }
         }
     }
-}
 
-@Composable
+    @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
         text = "Hello $name!",
         modifier = modifier
     )
 }
+
 @Composable
 fun ReminderText(){
     var textNotificationMsg by remember { mutableStateOf("default text") }
     var mExpanded by remember { mutableStateOf(false) }
-    var textTimerTime by remember { mutableStateOf("")}
+    var timerTime by remember { mutableIntStateOf(1) }
     val timeValues = listOf<Int>(1, 2, 3, 4, 5, 10)
     //val timeValues = listOf<String>("1", "2", "3", "4", "5", "10")
     val icon = if (mExpanded)
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
+
+    val inputData = workDataOf(
+        "notification_text" to textNotificationMsg
+    )
+    val workReq = OneTimeWorkRequestBuilder<MyWorker>()
+        .setInitialDelay(
+            timerTime.toLong() * 10,
+            TimeUnit.SECONDS
+        )
+        .setInputData(inputData)
+        .build()
+
     TextField(
         value = textNotificationMsg,
         onValueChange = { textNotificationMsg = it },
     )
     OutlinedTextField(
         readOnly = true,
-        value = textTimerTime,
+        value = timerTime.toString(),
         //placeholder = Text("123"),
         onValueChange = {
-            textTimerTime = it
             //Log.d("TextField", "text: $textNotificationMsg, it: $it" )
         },
         //fontSize = 24.sp,
@@ -113,11 +132,11 @@ fun ReminderText(){
         expanded = mExpanded,
         onDismissRequest = {mExpanded = false}
     ) {
-        timeValues.forEach { label ->
+        timeValues.forEachIndexed { index, label ->
             DropdownMenuItem(
                 text = { Text(label.toString()) },
                 onClick = {
-                    textTimerTime = label.toString()
+                    timerTime = index + 1
                     mExpanded = false
                 }
 
@@ -126,7 +145,11 @@ fun ReminderText(){
     }
 
     Button(onClick = {
-        Log.d("Button", "pressed, text is $textNotificationMsg, time is $textTimerTime")
+        Log.d("Button", "pressed, text is $textNotificationMsg, time is $timerTime")
+        //workReq = makeWorkReq(timerTime.toLong(), textNotificationMsg)
+        WorkManager.getInstance(this).enqueue(workReq)
+
+
     }) {
         Text (
             text = "Запланировать",
@@ -137,7 +160,11 @@ fun ReminderText(){
     }
 
     Button(onClick = {
-        Log.d("Button", "pressed, text is $textNotificationMsg, time is $textTimerTime")
+        Log.d("Button", "pressed, text is $textNotificationMsg, time is $timerTime")
+
+        val workM = WorkManager.getInstance(this)
+        workM.cancelWorkById(workReq.id)
+
     }) {
         Text (
             text = "Отминет",
