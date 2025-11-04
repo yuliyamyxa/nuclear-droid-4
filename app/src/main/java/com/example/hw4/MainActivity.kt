@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -102,7 +101,7 @@ fun ReminderText(){
     )
     val workReq = OneTimeWorkRequestBuilder<MyWorker>()
         .setInitialDelay(
-            timerTime.toLong() * 10,
+            timerTime.toLong() * 5,
             TimeUnit.SECONDS
         )
         .setInputData(inputData)
