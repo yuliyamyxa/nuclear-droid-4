@@ -9,11 +9,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +49,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+
+
+            var test by remember { mutableStateOf(false)}
             Hw4Theme {
 
                 Scaffold(
@@ -66,17 +71,38 @@ class MainActivity : ComponentActivity() {
 
                     ) {
                         Greeting(
-                            name = "Android",
+                            name = "bitches",
                         )
                         ReminderText()
 
+                        CheckBoxWithText(test, "test") { test = !test}
                     }
                 }
             }
         }
     }
 
-    @Composable
+
+@Composable
+fun CheckBoxWithText(state : Boolean, msg: String, onChange: (Boolean) -> Unit){
+    //var isChecked by remember {mutableStateOf(state)}
+    Row (
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Absolute.Left,
+    ) {
+        Checkbox(
+            checked = state,
+            onCheckedChange = {
+                onChange(state)
+            },
+        )
+        Text (
+           msg
+        )
+    }
+}
+
+@Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
         text = "Hello $name!",
@@ -84,13 +110,17 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
+
+
 @Composable
 fun ReminderText(){
     var textNotificationMsg by remember { mutableStateOf("default text") }
     var mExpanded by remember { mutableStateOf(false) }
-    var timerTime by remember { mutableIntStateOf(1) }
-    val timeValues = listOf<Int>(1, 2, 3, 4, 5, 10)
+    var timerTime by remember { mutableIntStateOf(0) }
+    val timeValues = listOf<Int>(1, 2, 3, 4, 5, 10, 15)
     //val timeValues = listOf<String>("1", "2", "3", "4", "5", "10")
+    var chargingOnly by remember { mutableStateOf(false)}
+    var fullChargeOnly by remember { mutableStateOf(false)}
     val icon = if (mExpanded)
         Icons.Filled.KeyboardArrowUp
     else
@@ -111,16 +141,23 @@ fun ReminderText(){
         value = textNotificationMsg,
         onValueChange = { textNotificationMsg = it },
     )
+    Column (
+        horizontalAlignment = Alignment.Start,
+    ) {
+        CheckBoxWithText(chargingOnly, "Все на зарядочку") { chargingOnly = !chargingOnly}
+        CheckBoxWithText(fullChargeOnly, "Только на полном заряде") { fullChargeOnly = !fullChargeOnly}
+    }
     OutlinedTextField(
         readOnly = true,
-        value = timerTime.toString(),
+        value = timeValues[timerTime].toString(),
+        //value = timerTime.toString(),
         //placeholder = Text("123"),
         onValueChange = {
             //Log.d("TextField", "text: $textNotificationMsg, it: $it" )
         },
         //fontSize = 24.sp,
         //modifier = Modifier.padding(innerPadding)
-        label = {Text("Label")},
+        label = {Text("Время")},
         trailingIcon = {
             Icon(icon,"contentDescription",
                 Modifier.clickable { mExpanded = !mExpanded })
@@ -135,7 +172,7 @@ fun ReminderText(){
             DropdownMenuItem(
                 text = { Text(label.toString()) },
                 onClick = {
-                    timerTime = index + 1
+                    timerTime = index
                     mExpanded = false
                 }
 
@@ -143,21 +180,19 @@ fun ReminderText(){
         }
     }
 
+
+   // PLAN
     Button(onClick = {
         Log.d("Button", "pressed, text is $textNotificationMsg, time is $timerTime")
         //workReq = makeWorkReq(timerTime.toLong(), textNotificationMsg)
         WorkManager.getInstance(this).enqueue(workReq)
-
-
     }) {
         Text (
-            text = "Запланировать",
+            text = "Старт",
             fontSize = 24.sp,
             //modifier = Modifier.padding(innerPadding),
         )
-
     }
-
     Button(onClick = {
         Log.d("Button", "pressed, text is $textNotificationMsg, time is $timerTime")
 
@@ -166,7 +201,7 @@ fun ReminderText(){
 
     }) {
         Text (
-            text = "Отминет",
+            text = "Стоп",
             fontSize = 24.sp,
             //modifier = Modifier.padding(innerPadding),
         )
