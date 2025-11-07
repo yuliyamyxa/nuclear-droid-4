@@ -24,13 +24,14 @@ class NotificationService () : Service() {
     override fun onCreate() {
        Log.d(TAG, "Service created")
 
+        createNotificationAndStart("start his shit")
         //createNotificationAndStart("567890")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "OnStartCommand")
         val msg = intent?.getStringExtra("NOTIFICATION")?: "default"
-        createNotificationAndStart(msg)
+        updateNotification(msg)
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -51,8 +52,8 @@ class NotificationService () : Service() {
             .setContentText(msg)
         val notification = builder.build()
         startForeground(FOREGROUND_ID, notification)
-        stopForeground(STOP_FOREGROUND_DETACH)
-        stopSelf()
+        //stopForeground(STOP_FOREGROUND_DETACH)
+       // stopSelf()
         // TODO не работает удаление - чо делать, как убивать. если раскомментить, что не показывается уведомление
         // UPD не зовется onDestroy
         // UPD зовется onDestroy co StopSeklf
@@ -63,7 +64,8 @@ class NotificationService () : Service() {
         //stopForeground(STOP_FOREGROUND_DETACH)
     }
     private fun updateNotification(title: String) {
-        val builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+        Log.d(TAG, "updateNotification")
+        val builder = NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setProgress(0, 0, true)

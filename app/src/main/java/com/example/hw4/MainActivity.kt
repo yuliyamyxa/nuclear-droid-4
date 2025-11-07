@@ -19,6 +19,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +27,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,14 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Constraints
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.example.hw4.ui.theme.Hw4Theme
-import kotlin.Int
-import kotlin.collections.listOf
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -110,14 +109,21 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
+/* как правильно уничтожить - в простом варианте и во втором
+TODO
+не всегда появляются уведомления
+констрейнт на полный заряд
 
+как обновить сообщенеи в periodic
+ */
 
 @Composable
 fun ReminderText(){
+    val tag = "shit"
     var textNotificationMsg by remember { mutableStateOf("default text") }
     var mExpanded by remember { mutableStateOf(false) }
-    var timerTime by remember { mutableIntStateOf(0) }
-    val timeValues = listOf<Int>(1, 2, 3, 4, 5, 10, 15)
+    var timerTime by remember { mutableIntStateOf(6) }
+    val timeValues = listOf<Int>(1, 2, 3, 4, 5, 10, 15, 20, 25, 30)
     //val timeValues = listOf<String>("1", "2", "3", "4", "5", "10")
     var chargingOnly by remember { mutableStateOf(false)}
     var fullChargeOnly by remember { mutableStateOf(false)}
@@ -129,12 +135,24 @@ fun ReminderText(){
     val inputData = workDataOf(
         "notification_text" to textNotificationMsg
     )
-    val workReq = OneTimeWorkRequestBuilder<MyWorker>()
+    //val workReq = OneTimeWorkRequestBuilder<MyWorker>()
+    val constraints = Constraints.Builder()
+        .setRequiresCharging(chargingOnly) // Только при зарядке
+        //.setRequiresBatteryNotLow(true) // Батарея не на низком уровне
+        .build()
+    val workReq = PeriodicWorkRequestBuilder<MyWorker>(
+        timerTime.toLong(),
+        TimeUnit.MINUTES,
+        timerTime.toLong() - 1,
+        TimeUnit.MINUTES
+    )//TimeUnit.SECONDS)
         .setInitialDelay(
             timerTime.toLong() * 5,
             TimeUnit.SECONDS
         )
         .setInputData(inputData)
+        .setConstraints(constraints)
+        .addTag(tag)
         .build()
 
     TextField(
@@ -157,7 +175,7 @@ fun ReminderText(){
         },
         //fontSize = 24.sp,
         //modifier = Modifier.padding(innerPadding)
-        label = {Text("Время")},
+        label = {Text("Период повтора, минут")},
         trailingIcon = {
             Icon(icon,"contentDescription",
                 Modifier.clickable { mExpanded = !mExpanded })
@@ -197,7 +215,9 @@ fun ReminderText(){
         Log.d("Button", "pressed, text is $textNotificationMsg, time is $timerTime")
 
         val workM = WorkManager.getInstance(this)
-        workM.cancelWorkById(workReq.id)
+        //workM.cancelWorkById(workReq.id)
+        workM.cancelAllWorkByTag(tag)
+
 
     }) {
         Text (
@@ -208,6 +228,7 @@ fun ReminderText(){
 
     }
 }
+
 }
 
 /*@Preview(showBackground = true)
